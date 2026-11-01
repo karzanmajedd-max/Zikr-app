@@ -19,9 +19,9 @@ class ReminderReceiver : BroadcastReceiver() {
    val soundOn=prefs.getBoolean("sound",false)
    val vibrateOn=prefs.getBoolean("vibration",true)
    val choice=prefs.getInt("sound_choice",0).coerceIn(0,3)
-   val channelId="dhikr_v3_"+(if(soundOn) "sound"+choice else "silent")+(if(vibrateOn) "_vib" else "_still")
-   val channel=NotificationChannel(channelId,"زیکرەکان",NotificationManager.IMPORTANCE_HIGH).apply {
-    description="بیرخستنەوەی زیکر"
+   val channelId="dhikr_heads_up_v4_"+(if(soundOn) "sound"+choice else "silent")+(if(vibrateOn) "_vib" else "_still")
+   val channel=NotificationChannel(channelId,"زیکرەکان — بانەری شاشە",NotificationManager.IMPORTANCE_HIGH).apply {
+    description="پیشاندانی زیکر وەک بانەر لە سەرەوەی شاشە"
     enableVibration(vibrateOn)
     if(soundOn) {
      val type=when(choice) { 1->RingtoneManager.TYPE_ALARM;2->RingtoneManager.TYPE_RINGTONE;else->RingtoneManager.TYPE_NOTIFICATION }
@@ -41,6 +41,11 @@ class ReminderReceiver : BroadcastReceiver() {
    val pending=PendingIntent.getBroadcast(context,101,dismiss,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
    val notification=Notification.Builder(context,channelId)
     .setSmallIcon(android.R.drawable.ic_popup_reminder)
+    .setCategory(Notification.CATEGORY_REMINDER)
+    .setPriority(Notification.PRIORITY_MAX)
+    .setDefaults(0)
+    .setWhen(System.currentTimeMillis())
+    .setShowWhen(true)
     .setContentTitle(d.arabic)
     .setContentText(d.kurdish)
     .setStyle(Notification.BigTextStyle().bigText(d.arabic+"\n"+d.kurdish))
