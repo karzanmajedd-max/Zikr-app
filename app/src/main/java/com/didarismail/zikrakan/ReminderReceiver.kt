@@ -18,11 +18,15 @@ class ReminderReceiver : BroadcastReceiver() {
    val manager=context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
    val soundOn=prefs.getBoolean("sound",false)
    val vibrateOn=prefs.getBoolean("vibration",true)
-   val channelId="dhikr_v2_"+(if(soundOn) "sound" else "silent")+(if(vibrateOn) "_vib" else "_still")
+   val choice=prefs.getInt("sound_choice",0).coerceIn(0,3)
+   val channelId="dhikr_v3_"+(if(soundOn) "sound"+choice else "silent")+(if(vibrateOn) "_vib" else "_still")
    val channel=NotificationChannel(channelId,"زیکرەکان",NotificationManager.IMPORTANCE_HIGH).apply {
     description="بیرخستنەوەی زیکر"
     enableVibration(vibrateOn)
-    if(soundOn) setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION), AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION).build())
+    if(soundOn) {
+     val type=when(choice) { 1->RingtoneManager.TYPE_ALARM;2->RingtoneManager.TYPE_RINGTONE;else->RingtoneManager.TYPE_NOTIFICATION }
+     setSound(RingtoneManager.getDefaultUri(type), AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION).build())
+    }
     else setSound(null,null)
     lockscreenVisibility=Notification.VISIBILITY_PUBLIC
    }
