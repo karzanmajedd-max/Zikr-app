@@ -2,7 +2,8 @@ package com.didarismail.zikrakan
 
 import android.app.*
 import android.content.*
-import android.graphics.Color
+import android.media.AudioAttributes
+import android.media.RingtoneManager
 import android.os.Build
 import java.util.Calendar
 
@@ -15,18 +16,23 @@ class ReminderReceiver : BroadcastReceiver() {
   val active=if(start<=end) hour in start until end else hour>=start || hour<end
   if(active) {
    val manager=context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-   val channelId="dhikr_reminders"
+   val soundOn=prefs.getBoolean("sound",false)
+   val vibrateOn=prefs.getBoolean("vibration",true)
+   val channelId="dhikr_v2_"+(if(soundOn) "sound" else "silent")+(if(vibrateOn) "_vib" else "_still")
    val channel=NotificationChannel(channelId,"زیکرەکان",NotificationManager.IMPORTANCE_HIGH).apply {
     description="بیرخستنەوەی زیکر"
-    enableVibration(prefs.getBoolean("vibration",true))
-    setSound(null,null)
+    enableVibration(vibrateOn)
+    if(soundOn) setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION), AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION).build())
+    else setSound(null,null)
     lockscreenVisibility=Notification.VISIBILITY_PUBLIC
    }
    manager.createNotificationChannel(channel)
    val index=prefs.getInt("next_index",0)
-   val shuffled=dhikrs.indices.shuffled(java.util.Random(prefs.getLong("seed",12345L)))
+   val seed=prefs.getLong("seed",0L).let { if(it==0L) { val value=System.currentTimeMillis(); prefs.edit().putLong("seed",value).apply();value } else it }
+   val shuffled=dhikrs.indices.shuffled(java.util.Random(seed))
    val d=dhikrs[shuffled[index % dhikrs.size]]
    prefs.edit().putInt("next_index",(index+1)%dhikrs.size).apply()
+   if(index+1>=dhikrs.size) prefs.edit().putLong("seed",System.currentTimeMillis()).apply()
    val dismiss=Intent(context,DismissReceiver::class.java).putExtra("notification_id",101)
    val pending=PendingIntent.getBroadcast(context,101,dismiss,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
    val notification=Notification.Builder(context,channelId)
