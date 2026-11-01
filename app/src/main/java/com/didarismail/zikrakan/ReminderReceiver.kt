@@ -57,6 +57,25 @@ class ReminderReceiver : BroadcastReceiver() {
   schedule(context)
  }
  companion object {
+  fun testHeadsUp(context:Context):Boolean {
+   if(Build.VERSION.SDK_INT>=33 && context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)!=android.content.pm.PackageManager.PERMISSION_GRANTED) return false
+   val manager=context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+   val id="zikrakan_banner_test_v1"
+   val channel=NotificationChannel(id,"تاقیکردنەوەی بانەر",NotificationManager.IMPORTANCE_HIGH)
+   channel.enableVibration(true)
+   channel.setSound(RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION),AudioAttributes.Builder().setUsage(AudioAttributes.USAGE_NOTIFICATION).build())
+   manager.createNotificationChannel(channel)
+   val n=Notification.Builder(context,id)
+    .setSmallIcon(android.R.drawable.ic_popup_reminder)
+    .setContentTitle("سُبْحَانَ اللَّهِ")
+    .setContentText("تاقیکردنەوەی بانەری زیکرەکان")
+    .setCategory(Notification.CATEGORY_REMINDER)
+    .setPriority(Notification.PRIORITY_MAX)
+    .setVisibility(Notification.VISIBILITY_PUBLIC)
+    .build()
+   manager.notify(109,n)
+   return true
+  }
   fun schedule(context:Context) {
    val prefs=context.getSharedPreferences("settings",Context.MODE_PRIVATE)
    val minutes=prefs.getInt("interval",5).coerceAtLeast(1)
