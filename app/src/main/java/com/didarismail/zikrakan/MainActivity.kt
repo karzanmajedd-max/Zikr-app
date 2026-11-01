@@ -135,6 +135,12 @@ class MainActivity : ComponentActivity() {
        Text("دەنگەکان لە سیستەمی ئەندرۆیدەوە وەردەگیرێن؛ هەندێکیان لە مۆبایلە جیاوازەکاندا هاوشێوەن.",color=Color(0xFFC5D0C5),fontSize=12.sp)
        }
        Spacer(Modifier.height(16.dp))
+       SettingsSection("تاقیکردنەوەی بانەری شاشە") {
+       Text("ئەم دوگمەیە نۆتیکەیشنێکی تاقیکردنەوە بە دەنگ و ئاستی گرنگی بەرز دەنێرێت.",color=Color.White,fontSize=15.sp)
+       Button(onClick={ val ok=ReminderReceiver.testHeadsUp(this@MainActivity); android.widget.Toast.makeText(this@MainActivity,if(ok)"نۆتیکەیشنی تاقیکردنەوە نێردرا" else "مۆڵەتی نۆتیکەیشن چالاک بکە",android.widget.Toast.LENGTH_LONG).show() },modifier=Modifier.fillMaxWidth(),colors=ButtonDefaults.buttonColors(containerColor=gold)) {Text("تاقیکردنەوەی بانەر",color=emerald,fontSize=17.sp)}
+       Text("ئەگەر لە لیستدا دەرکەوت بەڵام بانەر نەبوو، لە ڕێکخستنەکانی ئەندرۆید کاناڵی تاقیکردنەوەی بانەر بپشکنە.",color=gold,fontSize=13.sp)
+       }
+       Spacer(Modifier.height(16.dp))
        SettingsSection("ڕێکخستنەکانی ئەندرۆید") {
        Spacer(Modifier.height(14.dp))
        Text("ڕێکخستنەکانی سیستەمی ئەندرۆید",color=gold,fontSize=18.sp)
