@@ -24,6 +24,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.ui.text.font.FontWeight
 import android.app.TimePickerDialog
+import android.media.RingtoneManager
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -72,6 +73,7 @@ class MainActivity : ComponentActivity() {
    var end by remember { mutableIntStateOf(prefs.getInt("end", 22)) }
    var sound by remember { mutableStateOf(prefs.getBoolean("sound", false)) }
    var vibration by remember { mutableStateOf(prefs.getBoolean("vibration", true)) }
+   var selectedSound by remember { mutableIntStateOf(prefs.getInt("sound_choice",0)) }
    var customInterval by remember { mutableStateOf(interval.toString()) }
    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
    LaunchedEffect(Unit) { if(Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) permission.launch(Manifest.permission.POST_NOTIFICATIONS) }
@@ -117,7 +119,20 @@ class MainActivity : ComponentActivity() {
        SettingsSection("دەنگ و لەرینەوە") {
        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) { Switch(checked=sound,onCheckedChange={sound=it;prefs.edit().putBoolean("sound",it).apply()}); Text("دەنگی نۆتیکەیشن",color=Color.White,fontSize=18.sp) }
        Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) { Switch(checked=vibration,onCheckedChange={vibration=it;prefs.edit().putBoolean("vibration",it).apply()}); Text("لەرینەوە",color=Color.White,fontSize=18.sp) }
-       Text("بۆ هەڵبژاردنی دەنگی تایبەت، ڕێکخستنەکانی نۆتیکەیشنی ئەندرۆید بکەرەوە.",color=Color(0xFFC5D0C5),fontSize=13.sp)
+       Text("هەڵبژاردنی دەنگ",color=gold,fontSize=18.sp,modifier=Modifier.fillMaxWidth(),textAlign=TextAlign.End)
+       listOf("دەنگی نۆتیکەیشن","دەنگی ئاگادارکردنەوە","دەنگی تەلەفۆن","دەنگی سیستەم").forEachIndexed { n,label ->
+        Row(Modifier.fillMaxWidth().padding(vertical=3.dp),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) {
+         TextButton(onClick={
+          try {
+           val kind=when(n){0->RingtoneManager.TYPE_NOTIFICATION;1->RingtoneManager.TYPE_ALARM;2->RingtoneManager.TYPE_RINGTONE;else->RingtoneManager.TYPE_NOTIFICATION}
+           RingtoneManager.getRingtone(this@MainActivity,RingtoneManager.getDefaultUri(kind))?.play()
+          }catch(_:Exception){}
+         }) {Text("▷ تاقیکردنەوە",color=gold,fontSize=12.sp)}
+         RadioButton(selected=selectedSound==n,onClick={selectedSound=n;prefs.edit().putInt("sound_choice",n).apply();ReminderReceiver.schedule(this@MainActivity)},colors=RadioButtonDefaults.colors(selectedColor=gold))
+         Text(label,color=Color.White,fontSize=14.sp)
+        }
+       }
+       Text("دەنگەکان لە سیستەمی ئەندرۆیدەوە وەردەگیرێن؛ هەندێکیان لە مۆبایلە جیاوازەکاندا هاوشێوەن.",color=Color(0xFFC5D0C5),fontSize=12.sp)
        }
        Spacer(Modifier.height(16.dp))
        SettingsSection("ڕێکخستنەکانی ئەندرۆید") {
