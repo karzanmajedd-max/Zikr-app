@@ -45,7 +45,16 @@ val dhikrs = listOf(
  Dhikr("لَا حَوْلَ وَلَا قُوَّةَ إِلَّا بِاللَّهِ", "هیچ توانایەک و هێزێک نییە مەگەر بە یارمەتی خوا."),
  Dhikr("سُبْحَانَ اللَّهِ وَبِحَمْدِهِ", "پاکی بۆ خوا و ستایشیش هەر بۆ ئەوە."),
  Dhikr("سُبْحَانَ اللَّهِ الْعَظِيمِ", "پاکی بۆ خوای گەورە و مەزنە."),
- Dhikr("اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ", "خوایە، سەڵاوات لەسەر محەممەد بنێرە.")
+ Dhikr("اللَّهُمَّ صَلِّ عَلَى مُحَمَّدٍ", "خوایە، سەڵاوات لەسەر محەممەد بنێرە."),
+ Dhikr("حَسْبُنَا اللَّهُ وَنِعْمَ الْوَكِيلُ", "خوای گەورە بەسە بۆ ئێمە و باشترین پشت و پەنا و کارسازە."),
+ Dhikr("الْحَمْدُ لِلَّهِ رَبِّ الْعَالَمِينَ", "هەموو ستایش و سوپاسێک بۆ خوایە، پەروەردگاری هەموو جیهانیان."),
+ Dhikr("سُبْحَانَ اللَّهِ وَالْحَمْدُ لِلَّهِ وَلَا إِلَهَ إِلَّا اللَّهُ وَاللَّهُ أَكْبَرُ", "خوای گەورە پاک و بێگەردە؛ هەموو ستایشێک بۆ ئەوە؛ هیچ پەرستراوێکی بەهەق نییە جگە لە خوا، و خوا گەورەترە."),
+ Dhikr("أَسْتَغْفِرُ اللَّهَ وَأَتُوبُ إِلَيْهِ", "داوای لێخۆشبوون لە خوای گەورە دەکەم و تەوبە بۆ ئەو دەبەم."),
+ Dhikr("يَا حَيُّ يَا قَيُّومُ", "ئەی خوای هەمیشە زیندوو، ئەی ئەوەی بەخۆی ڕاوەستاوە و هەموو شتێک بە ئەو ڕاوەستاوە."),
+ Dhikr("لَا إِلَهَ إِلَّا اللَّهُ وَحْدَهُ لَا شَرِيكَ لَهُ، لَهُ الْمُلْكُ وَلَهُ الْحَمْدُ وَهُوَ عَلَى كُلِّ شَيْءٍ قَدِيرٌ", "هیچ پەرستراوێکی بەهەق نییە جگە لە خوای تاک و تەنها؛ هاوبەشی نییە؛ دەسەڵات و ستایش هی ئەوە و بەسەر هەموو شتێکدا توانای هەیە."),
+ Dhikr("سُبْحَانَ اللَّهِ الْعَظِيمِ، سُبْحَانَ اللَّهِ وَبِحَمْدِهِ", "خوای مەزن پاک و بێگەردە؛ خوای گەورە پاک و بێگەردە و ستایشی دەکەم."),
+ Dhikr("سُبْحَانَ اللَّهِ وَبِحَمْدِهِ عَدَدَ خَلْقِهِ وَرِضَا نَفْسِهِ وَزِنَةَ عَرْشِهِ وَمِدَادَ كَلِمَاتِهِ", "خوای گەورە پاک و بێگەردە و ستایشی دەکەم بە ئەندازەی ژمارەی دروستکراوەکانی، ڕەزامەندی خۆی، قورسایی عەرشی و مەدەدی وشەکانی."),
+ Dhikr("بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ", "بە ناوی خوای بەخشندەی میهرەبان.")
 )
 class MainActivity : ComponentActivity() {
  override fun onCreate(savedInstanceState: Bundle?) {
@@ -90,19 +99,28 @@ class MainActivity : ComponentActivity() {
       }
       3 -> {
        Text("ڕێکخستنەکان",color=Color.White,fontSize=27.sp,fontWeight=FontWeight.Bold)
+       Text("کۆنترۆڵی نۆتیکەیشن و دەنگ",color=gold,fontSize=16.sp)
+       Spacer(Modifier.height(18.dp))
        Spacer(Modifier.height(16.dp))
+       SettingsSection("کاتەکانی نۆتیکەیشن") {
        Text("ماوەی نێوان نۆتیکەیشنەکان", color=gold)
-       Row(horizontalArrangement=Arrangement.spacedBy(3.dp)) {
-        listOf(1,5,10,15,30,45,60).forEach { n -> TextButton(onClick={ interval=n; prefs.edit().putInt("interval",n).apply(); ReminderReceiver.schedule(this@MainActivity) }) { Text("$n", color=if(interval==n) gold else Color.White, fontSize=12.sp) } }
-       }
+       listOf(1,5,10,15,30,45,60).chunked(4).forEach { group -> Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.spacedBy(5.dp)) { group.forEach { n -> OutlinedButton(onClick={ interval=n;customInterval=n.toString();prefs.edit().putInt("interval",n).apply();ReminderReceiver.schedule(this@MainActivity) },modifier=Modifier.weight(1f),contentPadding=PaddingValues(0.dp),border=BorderStroke(1.dp,if(interval==n)gold else Color(0xFF667C6B)),colors=ButtonDefaults.outlinedButtonColors(containerColor=if(interval==n)gold else Color.Transparent)) {Text("$n",color=if(interval==n)emerald else gold,fontSize=14.sp)} } } }
        OutlinedTextField(value=customInterval,onValueChange={customInterval=it.filter { ch -> ch.isDigit() }.take(4)},label={Text("ماوەی تایبەتی بە خولەک")},singleLine=true)
        Button(onClick={ val v=customInterval.toIntOrNull(); if(v!=null && v in 1..1440) {interval=v;prefs.edit().putInt("interval",v).apply();ReminderReceiver.schedule(this@MainActivity)} }) { Text("پاشەکەوتکردنی ماوە") }
        Text("دەستپێک: $start:00", color=Color.White)
        Button(onClick={TimePickerDialog(this@MainActivity,{_,h,_->start=h;prefs.edit().putInt("start",h).apply();ReminderReceiver.schedule(this@MainActivity)},start,0,true).show()},colors=ButtonDefaults.buttonColors(containerColor=gold)) {Text("دیاریکردنی دەستپێک",color=emerald)}
+       Spacer(Modifier.height(12.dp))
        Text("کۆتایی: $end:00", color=Color.White)
        Button(onClick={TimePickerDialog(this@MainActivity,{_,h,_->end=h;prefs.edit().putInt("end",h).apply();ReminderReceiver.schedule(this@MainActivity)},end,0,true).show()},colors=ButtonDefaults.buttonColors(containerColor=gold)) {Text("دیاریکردنی کۆتایی",color=emerald)}
-       Row(verticalAlignment=Alignment.CenterVertically) { Text("دەنگ",color=Color.White); Switch(checked=sound,onCheckedChange={sound=it;prefs.edit().putBoolean("sound",it).apply()}) }
-       Row(verticalAlignment=Alignment.CenterVertically) { Text("لەرینەوە",color=Color.White); Switch(checked=vibration,onCheckedChange={vibration=it;prefs.edit().putBoolean("vibration",it).apply()}) }
+       }
+       Spacer(Modifier.height(16.dp))
+       SettingsSection("دەنگ و لەرینەوە") {
+       Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) { Switch(checked=sound,onCheckedChange={sound=it;prefs.edit().putBoolean("sound",it).apply()}); Text("دەنگی نۆتیکەیشن",color=Color.White,fontSize=18.sp) }
+       Row(Modifier.fillMaxWidth(),horizontalArrangement=Arrangement.SpaceBetween,verticalAlignment=Alignment.CenterVertically) { Switch(checked=vibration,onCheckedChange={vibration=it;prefs.edit().putBoolean("vibration",it).apply()}); Text("لەرینەوە",color=Color.White,fontSize=18.sp) }
+       Text("بۆ هەڵبژاردنی دەنگی تایبەت، ڕێکخستنەکانی نۆتیکەیشنی ئەندرۆید بکەرەوە.",color=Color(0xFFC5D0C5),fontSize=13.sp)
+       }
+       Spacer(Modifier.height(16.dp))
+       SettingsSection("ڕێکخستنەکانی ئەندرۆید") {
        Spacer(Modifier.height(14.dp))
        Text("ڕێکخستنەکانی سیستەمی ئەندرۆید",color=gold,fontSize=18.sp)
        Button(onClick={
@@ -118,6 +136,7 @@ class MainActivity : ComponentActivity() {
         catch (_:Exception) { startActivity(Intent(Settings.ACTION_SETTINGS)) }
        }) { Text("مۆڵەتی نۆتیکەیشن و شاشەی قوفڵ") }
        Text("نۆتیکەیشنەکان بە پێی ڕێکخستنەکانی ئەندرۆید دەرکەون؛ کاتی ورد گەرەنتی ناکرێت.", color=gold,fontSize=12.sp)
+       }
       }
      }
      } 
@@ -135,3 +154,5 @@ class MainActivity : ComponentActivity() {
   Text(d.kurdish,color=Color.White,fontSize=19.sp,textAlign=TextAlign.Center,lineHeight=31.sp)
  }
 }
+
+@Composable fun SettingsSection(title:String, content:@Composable ColumnScope.()->Unit) { Column(Modifier.fillMaxWidth().background(Color(0xFF15392F),RoundedCornerShape(26.dp)).border(1.dp,Color(0xFF68765D),RoundedCornerShape(26.dp)).padding(20.dp),verticalArrangement=Arrangement.spacedBy(10.dp)) {Text(title,color=gold,fontSize=21.sp,fontWeight=FontWeight.Bold,modifier=Modifier.fillMaxWidth(),textAlign=TextAlign.End);content()} }
