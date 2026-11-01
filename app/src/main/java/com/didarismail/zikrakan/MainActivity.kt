@@ -17,6 +17,13 @@ import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.material3.darkColorScheme
+import androidx.compose.ui.text.font.FontWeight
+import android.app.TimePickerDialog
 import androidx.compose.material3.*
 import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
@@ -59,23 +66,22 @@ class MainActivity : ComponentActivity() {
    var customInterval by remember { mutableStateOf(interval.toString()) }
    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
    LaunchedEffect(Unit) { if(Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) permission.launch(Manifest.permission.POST_NOTIFICATIONS) }
-   MaterialTheme {
-    Column(Modifier.fillMaxSize().background(emerald).padding(18.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-     Text("زیکرەکان", color=gold, fontSize=32.sp)
+   MaterialTheme(colorScheme=darkColorScheme(primary=gold,background=emerald,surface=Color(0xFF14392F))) {
+    Column(Modifier.fillMaxSize().background(Brush.verticalGradient(listOf(Color(0xFF174838),Color(0xFF08271F)))), horizontalAlignment = Alignment.CenterHorizontally) {
+     Row(Modifier.fillMaxWidth().background(Color(0xFF1B1C22)).padding(24.dp),horizontalArrangement=Arrangement.End) { Text("زیکرەکان", color=Color.White, fontSize=26.sp) }
      Spacer(Modifier.height(18.dp))
-     Row(horizontalArrangement=Arrangement.spacedBy(5.dp)) {
-      listOf("سەرەکی","زیکرەکان","تەسبیح","ڕێکخستن").forEachIndexed { i,t ->
-       TextButton(onClick={page=i}) { Text(t, color=if(page==i) gold else Color.White, fontSize=12.sp) }
-      }
-     }
-     Spacer(Modifier.height(16.dp))
+     Column(Modifier.weight(1f).verticalScroll(rememberScrollState()).padding(18.dp),horizontalAlignment=Alignment.CenterHorizontally) {
      when(page) {
       0 -> {
+       Text("☾   زیکرەکان",color=gold,fontSize=26.sp,fontWeight=FontWeight.Bold)
+       Spacer(Modifier.height(16.dp))
+       Text("دڵت بە زیکری خوا ئارام بکە",color=Color.White,fontSize=24.sp,fontWeight=FontWeight.Bold)
+       Spacer(Modifier.height(24.dp))
        DhikrCard(dhikrs[index])
        Spacer(Modifier.height(20.dp))
-       Button(onClick={ if(position+1 >= order.size) { order=dhikrs.indices.shuffled();position=0 } else position++; index=order[position] }, colors=ButtonDefaults.buttonColors(containerColor=gold)) { Text("زیکری داهاتوو", color=emerald) }
+       Button(onClick={ if(position+1 >= order.size) { order=dhikrs.indices.shuffled();position=0 } else position++; index=order[position] }, colors=ButtonDefaults.buttonColors(containerColor=gold),modifier=Modifier.fillMaxWidth()) { Text("↻ زیکرێکی دیکە", color=emerald) }
       }
-      1 -> LazyColumn { items(dhikrs) { DhikrCard(it); Spacer(Modifier.height(12.dp)) } }
+      1 -> { Text("هەموو زیکرەکان",color=Color.White,fontSize=27.sp,fontWeight=FontWeight.Bold);Spacer(Modifier.height(18.dp));dhikrs.forEach { DhikrCard(it); Spacer(Modifier.height(18.dp)) } }
       2 -> {
        Spacer(Modifier.height(50.dp))
        Text("$count", color=gold, fontSize=72.sp)
@@ -83,6 +89,8 @@ class MainActivity : ComponentActivity() {
        TextButton(onClick={ count=0; prefs.edit().putInt("count",0).apply() }) { Text("سفرکردنەوە",color=Color.White) }
       }
       3 -> {
+       Text("ڕێکخستنەکان",color=Color.White,fontSize=27.sp,fontWeight=FontWeight.Bold)
+       Spacer(Modifier.height(16.dp))
        Text("ماوەی نێوان نۆتیکەیشنەکان", color=gold)
        Row(horizontalArrangement=Arrangement.spacedBy(3.dp)) {
         listOf(1,5,10,15,30,45,60).forEach { n -> TextButton(onClick={ interval=n; prefs.edit().putInt("interval",n).apply(); ReminderReceiver.schedule(this@MainActivity) }) { Text("$n", color=if(interval==n) gold else Color.White, fontSize=12.sp) } }
@@ -90,9 +98,9 @@ class MainActivity : ComponentActivity() {
        OutlinedTextField(value=customInterval,onValueChange={customInterval=it.filter { ch -> ch.isDigit() }.take(4)},label={Text("ماوەی تایبەتی بە خولەک")},singleLine=true)
        Button(onClick={ val v=customInterval.toIntOrNull(); if(v!=null && v in 1..1440) {interval=v;prefs.edit().putInt("interval",v).apply();ReminderReceiver.schedule(this@MainActivity)} }) { Text("پاشەکەوتکردنی ماوە") }
        Text("دەستپێک: $start:00", color=Color.White)
-       Slider(value=start.toFloat(),onValueChange={ start=it.toInt().coerceIn(0,23); prefs.edit().putInt("start",start).apply();ReminderReceiver.schedule(this@MainActivity) },valueRange=0f..23f)
+       Button(onClick={TimePickerDialog(this@MainActivity,{_,h,_->start=h;prefs.edit().putInt("start",h).apply();ReminderReceiver.schedule(this@MainActivity)},start,0,true).show()},colors=ButtonDefaults.buttonColors(containerColor=gold)) {Text("دیاریکردنی دەستپێک",color=emerald)}
        Text("کۆتایی: $end:00", color=Color.White)
-       Slider(value=end.toFloat(),onValueChange={ end=it.toInt().coerceIn(0,23); prefs.edit().putInt("end",end).apply();ReminderReceiver.schedule(this@MainActivity) },valueRange=0f..23f)
+       Button(onClick={TimePickerDialog(this@MainActivity,{_,h,_->end=h;prefs.edit().putInt("end",h).apply();ReminderReceiver.schedule(this@MainActivity)},end,0,true).show()},colors=ButtonDefaults.buttonColors(containerColor=gold)) {Text("دیاریکردنی کۆتایی",color=emerald)}
        Row(verticalAlignment=Alignment.CenterVertically) { Text("دەنگ",color=Color.White); Switch(checked=sound,onCheckedChange={sound=it;prefs.edit().putBoolean("sound",it).apply()}) }
        Row(verticalAlignment=Alignment.CenterVertically) { Text("لەرینەوە",color=Color.White); Switch(checked=vibration,onCheckedChange={vibration=it;prefs.edit().putBoolean("vibration",it).apply()}) }
        Spacer(Modifier.height(14.dp))
@@ -112,7 +120,8 @@ class MainActivity : ComponentActivity() {
        Text("نۆتیکەیشنەکان بە پێی ڕێکخستنەکانی ئەندرۆید دەرکەون؛ کاتی ورد گەرەنتی ناکرێت.", color=gold,fontSize=12.sp)
       }
      }
-     Spacer(Modifier.weight(1f))
+     } 
+     Row(Modifier.fillMaxWidth().background(Color(0xFF173C31),RoundedCornerShape(24.dp)).padding(8.dp),horizontalArrangement=Arrangement.SpaceEvenly) {listOf("⌂" to "سەرەکی","☷" to "زیکرەکان","⚙" to "ڕێکخستن").forEachIndexed {i,p->Column(Modifier.weight(1f).background(if(page==i)Color(0xFF305746)else Color.Transparent,RoundedCornerShape(18.dp)).clickable{page=if(i==0)0 else if(i==1)1 else 3}.padding(10.dp),horizontalAlignment=Alignment.CenterHorizontally){Text(p.first,color=gold,fontSize=23.sp);Text(p.second,color=Color.White,fontSize=13.sp)}}}
      Text("© Didar ismail",color=gold,fontSize=12.sp)
     }
    }
@@ -120,8 +129,8 @@ class MainActivity : ComponentActivity() {
  }
 }
 @Composable fun DhikrCard(d: Dhikr) {
- Column(Modifier.fillMaxWidth().background(Color(0xFF16443B), RoundedCornerShape(20.dp)).padding(22.dp),horizontalAlignment=Alignment.CenterHorizontally) {
-  Text(d.arabic,color=gold,fontSize=27.sp,textAlign=TextAlign.Center,lineHeight=43.sp)
+ Column(Modifier.fillMaxWidth().background(Color(0xFF15392F), RoundedCornerShape(28.dp)).border(1.dp,Color(0xFF7A7554),RoundedCornerShape(28.dp)).padding(25.dp),horizontalAlignment=Alignment.CenterHorizontally) {
+  Text(d.arabic,color=Color(0xFFFFEED5),fontSize=31.sp,textAlign=TextAlign.Center,lineHeight=43.sp)
   Spacer(Modifier.height(15.dp))
   Text(d.kurdish,color=Color.White,fontSize=19.sp,textAlign=TextAlign.Center,lineHeight=31.sp)
  }
