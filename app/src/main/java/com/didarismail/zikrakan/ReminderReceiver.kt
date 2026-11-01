@@ -1,0 +1,64 @@
+package com.didarismail.zikrakan
+
+import android.app.*
+import android.content.*
+import android.graphics.Color
+import android.os.Build
+import java.util.Calendar
+
+class ReminderReceiver : BroadcastReceiver() {
+ override fun onReceive(context: Context, intent: Intent) {
+  val prefs=context.getSharedPreferences("settings",Context.MODE_PRIVATE)
+  val hour=Calendar.getInstance().get(Calendar.HOUR_OF_DAY)
+  val start=prefs.getInt("start",7)
+  val end=prefs.getInt("end",22)
+  val active=if(start<=end) hour in start until end else hour>=start || hour<end
+  if(active) {
+   val manager=context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+   val channelId="dhikr_reminders"
+   val channel=NotificationChannel(channelId,"زیکرەکان",NotificationManager.IMPORTANCE_HIGH).apply {
+    description="بیرخستنەوەی زیکر"
+    enableVibration(prefs.getBoolean("vibration",true))
+    setSound(null,null)
+    lockscreenVisibility=Notification.VISIBILITY_PUBLIC
+   }
+   manager.createNotificationChannel(channel)
+   val index=prefs.getInt("next_index",0)
+   val shuffled=dhikrs.indices.shuffled(java.util.Random(prefs.getLong("seed",12345L)))
+   val d=dhikrs[shuffled[index % dhikrs.size]]
+   prefs.edit().putInt("next_index",(index+1)%dhikrs.size).apply()
+   val dismiss=Intent(context,DismissReceiver::class.java).putExtra("notification_id",101)
+   val pending=PendingIntent.getBroadcast(context,101,dismiss,PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+   val notification=Notification.Builder(context,channelId)
+    .setSmallIcon(android.R.drawable.ic_popup_reminder)
+    .setContentTitle(d.arabic)
+    .setContentText(d.kurdish)
+    .setStyle(Notification.BigTextStyle().bigText(d.arabic+"\n"+d.kurdish))
+    .setContentIntent(pending).setAutoCancel(true)
+    .setVisibility(Notification.VISIBILITY_PUBLIC)
+    .build()
+   if(Build.VERSION.SDK_INT<33 || context.checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)==android.content.pm.PackageManager.PERMISSION_GRANTED) manager.notify(101,notification)
+  }
+  schedule(context)
+ }
+ companion object {
+  fun schedule(context:Context) {
+   val prefs=context.getSharedPreferences("settings",Context.MODE_PRIVATE)
+   val minutes=prefs.getInt("interval",5).coerceAtLeast(1)
+   val alarm=context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+   val pending=PendingIntent.getBroadcast(context,100,Intent(context,ReminderReceiver::class.java),PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+   alarm.cancel(pending)
+   alarm.setAndAllowWhileIdle(AlarmManager.RTC_WAKEUP,System.currentTimeMillis()+minutes*60_000L,pending)
+  }
+ }
+}
+class DismissReceiver:BroadcastReceiver() {
+ override fun onReceive(context:Context,intent:Intent) {
+  (context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager).cancel(intent.getIntExtra("notification_id",101))
+ }
+}
+class BootReceiver:BroadcastReceiver() {
+ override fun onReceive(context:Context,intent:Intent) {
+  if(intent.action==Intent.ACTION_BOOT_COMPLETED) ReminderReceiver.schedule(context)
+ }
+}
