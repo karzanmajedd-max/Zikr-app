@@ -46,12 +46,15 @@ class MainActivity : ComponentActivity() {
   setContent {
    var page by remember { mutableStateOf(0) }
    var index by remember { mutableIntStateOf(0) }
+   var order by remember { mutableStateOf(dhikrs.indices.shuffled()) }
+   var position by remember { mutableIntStateOf(0) }
    var count by remember { mutableIntStateOf(prefs.getInt("count", 0)) }
    var interval by remember { mutableIntStateOf(prefs.getInt("interval", 5)) }
    var start by remember { mutableIntStateOf(prefs.getInt("start", 7)) }
    var end by remember { mutableIntStateOf(prefs.getInt("end", 22)) }
    var sound by remember { mutableStateOf(prefs.getBoolean("sound", false)) }
    var vibration by remember { mutableStateOf(prefs.getBoolean("vibration", true)) }
+   var customInterval by remember { mutableStateOf(interval.toString()) }
    val permission = rememberLauncherForActivityResult(ActivityResultContracts.RequestPermission()) {}
    LaunchedEffect(Unit) { if(Build.VERSION.SDK_INT >= 33 && checkSelfPermission(Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) permission.launch(Manifest.permission.POST_NOTIFICATIONS) }
    MaterialTheme {
@@ -68,7 +71,7 @@ class MainActivity : ComponentActivity() {
       0 -> {
        DhikrCard(dhikrs[index])
        Spacer(Modifier.height(20.dp))
-       Button(onClick={ index=(index+1)%dhikrs.size }, colors=ButtonDefaults.buttonColors(containerColor=gold)) { Text("زیکری داهاتوو", color=emerald) }
+       Button(onClick={ if(position+1 >= order.size) { order=dhikrs.indices.shuffled();position=0 } else position++; index=order[position] }, colors=ButtonDefaults.buttonColors(containerColor=gold)) { Text("زیکری داهاتوو", color=emerald) }
       }
       1 -> LazyColumn { items(dhikrs) { DhikrCard(it); Spacer(Modifier.height(12.dp)) } }
       2 -> {
@@ -82,6 +85,8 @@ class MainActivity : ComponentActivity() {
        Row(horizontalArrangement=Arrangement.spacedBy(3.dp)) {
         listOf(1,5,10,15,30,45,60).forEach { n -> TextButton(onClick={ interval=n; prefs.edit().putInt("interval",n).apply(); ReminderReceiver.schedule(this@MainActivity) }) { Text("$n", color=if(interval==n) gold else Color.White, fontSize=12.sp) } }
        }
+       OutlinedTextField(value=customInterval,onValueChange={customInterval=it.filter { ch -> ch.isDigit() }.take(4)},label={Text("ماوەی تایبەتی بە خولەک")},singleLine=true)
+       Button(onClick={ val v=customInterval.toIntOrNull(); if(v!=null && v in 1..1440) {interval=v;prefs.edit().putInt("interval",v).apply();ReminderReceiver.schedule(this@MainActivity)} }) { Text("پاشەکەوتکردنی ماوە") }
        Text("دەستپێک: $start:00", color=Color.White)
        Slider(value=start.toFloat(),onValueChange={ start=it.toInt().coerceIn(0,23); prefs.edit().putInt("start",start).apply();ReminderReceiver.schedule(this@MainActivity) },valueRange=0f..23f)
        Text("کۆتایی: $end:00", color=Color.White)
