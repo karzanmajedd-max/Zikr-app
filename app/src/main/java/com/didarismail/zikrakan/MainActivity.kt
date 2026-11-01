@@ -6,6 +6,8 @@ import android.content.*
 import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Bundle
+import android.provider.Settings
+import android.net.Uri
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -93,6 +95,20 @@ class MainActivity : ComponentActivity() {
        Slider(value=end.toFloat(),onValueChange={ end=it.toInt().coerceIn(0,23); prefs.edit().putInt("end",end).apply();ReminderReceiver.schedule(this@MainActivity) },valueRange=0f..23f)
        Row(verticalAlignment=Alignment.CenterVertically) { Text("دەنگ",color=Color.White); Switch(checked=sound,onCheckedChange={sound=it;prefs.edit().putBoolean("sound",it).apply()}) }
        Row(verticalAlignment=Alignment.CenterVertically) { Text("لەرینەوە",color=Color.White); Switch(checked=vibration,onCheckedChange={vibration=it;prefs.edit().putBoolean("vibration",it).apply()}) }
+       Spacer(Modifier.height(14.dp))
+       Text("ڕێکخستنەکانی سیستەمی ئەندرۆید",color=gold,fontSize=18.sp)
+       Button(onClick={
+        val i=Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS, Uri.parse("package:"+packageName))
+        try { startActivity(i) } catch (_:Exception) { startActivity(Intent(Settings.ACTION_IGNORE_BATTERY_OPTIMIZATION_SETTINGS)) }
+       }) { Text("Battery Optimization") }
+       Button(onClick={
+        try { startActivity(Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)) }
+        catch (_:Exception) { startActivity(Intent(Settings.ACTION_SETTINGS)) }
+       }) { Text("Do Not Disturb") }
+       Button(onClick={
+        try { startActivity(Intent(Settings.ACTION_APP_NOTIFICATION_SETTINGS).putExtra(Settings.EXTRA_APP_PACKAGE,packageName)) }
+        catch (_:Exception) { startActivity(Intent(Settings.ACTION_SETTINGS)) }
+       }) { Text("مۆڵەتی نۆتیکەیشن و شاشەی قوفڵ") }
        Text("نۆتیکەیشنەکان بە پێی ڕێکخستنەکانی ئەندرۆید دەرکەون؛ کاتی ورد گەرەنتی ناکرێت.", color=gold,fontSize=12.sp)
       }
      }
