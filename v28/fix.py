@@ -150,6 +150,15 @@ class NotificationIntegrationTest {
     private val ctx: Context get() = InstrumentationRegistry.getInstrumentation().targetContext
     private val nm: NotificationManager get() = ctx.getSystemService(NotificationManager::class.java)
 
+    private fun waitForActive(): Array<android.service.notification.StatusBarNotification> {
+        for (i in 1..60) {
+            val list = nm.activeNotifications
+            if (list.isNotEmpty()) return list
+            Thread.sleep(100)
+        }
+        return nm.activeNotifications
+    }
+
     @Test fun schedulesEvery45MinutesUntil22() {
         val points = Scheduler.slots(ZikrPrefs())
         assertEquals(21, points.size)
@@ -159,9 +168,13 @@ class NotificationIntegrationTest {
 
     @Test fun bannerNotificationRemainsHighImportance() {
         nm.cancelAll()
+        Thread.sleep(200)
+        assertTrue("notification permission", Notifier.hasPermission(ctx))
+        assertTrue("notifications enabled in Android", nm.areNotificationsEnabled())
+        assertTrue("overlay app-op should be granted for this test", Notifier.hasOverlay(ctx))
         Notifier.show(ctx, ZikrPrefs(banner=true, sound=false, vibrate=true),
             Notifier.Dhikr("سُبْحَانَ اللَّهِ", "پاکی بۆ خوا", ""))
-        val active = nm.activeNotifications
+        val active = waitForActive()
         assertTrue("system notification must exist even with banner setting ON", active.isNotEmpty())
         val channel = nm.getNotificationChannel(active.last().notification.channelId)
         assertNotNull(channel)
@@ -172,9 +185,12 @@ class NotificationIntegrationTest {
     @Test fun tapActionDismissesWithoutOpeningActivity() {
         nm.cancelAll()
         Notifier.show(ctx, ZikrPrefs(banner=false), Notifier.Dhikr("test", "تاقیکردنەوە", ""))
-        val id = nm.activeNotifications.last().id
+        val id = waitForActive().last().id
         ctx.sendBroadcast(Intent(ctx, DismissReceiver::class.java).putExtra("id", id))
-        Thread.sleep(500)
+        for (i in 1..40) {
+            if (nm.activeNotifications.none { it.id == id }) break
+            Thread.sleep(100)
+        }
         assertFalse(nm.activeNotifications.any { it.id == id })
     }
 }
