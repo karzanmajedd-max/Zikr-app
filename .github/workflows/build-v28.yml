@@ -67,10 +67,11 @@ jobs:
           emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
           disable-animations: true
           script: |
-            cd buildsrc
-            gradle :app:installDebug --no-daemon
+            gradle -p buildsrc :app:installDebug --no-daemon
             adb shell pm grant com.zikr.zikrakan android.permission.POST_NOTIFICATIONS
-            gradle :app:connectedDebugAndroidTest --no-daemon --stacktrace
+            adb shell appops set com.zikr.zikrakan SYSTEM_ALERT_WINDOW allow
+            adb shell appops get com.zikr.zikrakan SYSTEM_ALERT_WINDOW
+            gradle -p buildsrc :app:connectedDebugAndroidTest --no-daemon --stacktrace
       - name: Publish tested APK
         if: success()
         env:
