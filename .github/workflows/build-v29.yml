@@ -30,7 +30,7 @@ jobs:
           mkdir -p buildsrc
           base64 -d v27/Zikrakan_v27_source_b64.txt | xz -d | tar xf - -C buildsrc
           python3 v29/fix.py
-          grep -q 'zikr_banner_v29_' buildsrc/app/src/main/java/com/zikr/zikrakan/Notifier.kt
+          grep -q 'quickFloating' buildsrc/app/src/main/assets/index.html
       - name: Check WebView JavaScript syntax
         run: |
           python3 - <<'PY'
