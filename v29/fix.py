@@ -73,7 +73,7 @@ const check=()=>{
   l.push((s.overlay?'✓':'•')+' مۆڵەتی کارتی سەرشاشە: '+(s.overlay?'هەیە':'پێویستە بۆ کارتی تایبەت'));
   if(s.overlayError)l.push('⚠ هەڵەی کارتی سەرشاشە: '+s.overlayError);
   l.push('ℹ دۆخی Floating لە HyperOS لەناو ئەپ ناپشکنرێت. لە Settings چالاکی بکە.');
-  out.textContent=l.join('\\\\n');
+  out.textContent=l.join('\\n');
  }catch(e){out.textContent='نەتوانرا دۆخی مۆبایل بپشکنرێت.'}
 };
 x('quickCheck').onclick=check;
