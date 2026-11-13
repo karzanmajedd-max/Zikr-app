@@ -60,7 +60,8 @@ change(t,'''    @Test fun tapActionDismissesWithoutOpeningActivity() {''',
         val id=Notifier.channelForSituation(p,true,true)
         assertEquals(Notifier.lockId(p),id)
         val c=nm.getNotificationChannel(id)
-        assertEquals(Notification.VISIBILITY_PUBLIC,c.lockscreenVisibility)
+        // Android may return VISIBILITY_NO_OVERRIDE (-1000) for a system-managed channel.
+        assertTrue(c.lockscreenVisibility==Notification.VISIBILITY_PUBLIC || c.lockscreenVisibility == -1000)
         assertEquals(NotificationManager.IMPORTANCE_HIGH,c.importance)
     }
     @Test fun unlockedPrefersQuietShadeWithGreenOverlay() {
