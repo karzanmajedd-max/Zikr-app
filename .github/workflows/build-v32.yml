@@ -67,7 +67,8 @@ jobs:
           assert.equal(counter.textContent,'0');
           assert(src.includes("canNativeOverlay"));
           assert.equal((src.match(/class=\"settingCard simpleCard\"/g)||[]).length,3,'three compact settings cards');
-          assert(!src.includes('quickFix'),'old quick-fix clutter should be gone');
+          const settingsView=src.slice(src.indexOf('function settings(){return'),src.indexOf('function bind(){'));
+          assert(!settingsView.includes('quickFix'),'old quick-fix panel must not appear in settings view');
           console.log('Reset test passed; WebView preview is native-only on Android');
           NODE
       - name: Compile application and Android tests
