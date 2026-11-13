@@ -145,7 +145,7 @@ s=s[:start]+new_handlers+s[end:]
 if 'function tidySettingsLayout(){' in s:
     i=s.index('function tidySettingsLayout(){')
     j=s.index('function render(){',i)
-    s=s[:i]+'function tidySettingsLayout(){}\\n'+s[j:]
+    s=s[:i]+'function tidySettingsLayout(){}\n'+s[j:]
 s=s.replace("const canShowNativeSample = false;", "const canShowNativeSample = false;") # no-op for backwards compatibility
 old_preview="$('mockNotif').classList.toggle('visible', !(window.Android&&typeof Android.showTest==='function'));"
 assert old_preview in s
