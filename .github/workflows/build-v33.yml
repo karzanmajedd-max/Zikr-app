@@ -1,0 +1,122 @@
+name: Security audit and unsigned release build Zikrakan 3.3
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'v33/**'
+      - '.github/workflows/build-v33.yml'
+  workflow_dispatch:
+permissions:
+  contents: write
+jobs:
+  build-test:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: '17'
+      - uses: gradle/actions/setup-gradle@v4
+        with:
+          gradle-version: '8.9'
+      - name: Set up Android SDK 35
+        run: |
+          SDKMANAGER="$(find "$ANDROID_HOME/cmdline-tools" -type f -name sdkmanager | head -n 1)"
+          "$SDKMANAGER" "platforms;android-35" "build-tools;35.0.0"
+      - name: Restore original resources and apply fix
+        run: |
+          mkdir -p buildsrc
+          base64 -d v27/Zikrakan_v27_source_b64.txt | xz -d | tar xf - -C buildsrc
+          python3 v30/fix.py
+          python3 v31/native.py
+          python3 v31/ui.py
+          python3 v32/fix.py
+          python3 v33/harden.py
+          ! grep -q 'REQUEST_IGNORE_BATTERY_OPTIMIZATIONS' buildsrc/app/src/main/AndroidManifest.xml
+          grep -q 'simpleCard' buildsrc/app/src/main/assets/index.html
+          grep -q 'zikr_shade_no_popup_v30' buildsrc/app/src/main/java/com/zikr/zikrakan/Notifier.kt
+      - name: Check WebView JavaScript syntax
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+          html=Path('buildsrc/app/src/main/assets/index.html').read_text()
+          chunks=re.findall(r'<script(?:\s[^>]*)?>(.*?)</script>',html,re.S|re.I)
+          assert chunks
+          Path('buildsrc/ui-check.js').write_text('\n'.join(chunks))
+          PY
+          node --check buildsrc/ui-check.js
+      - name: Test counter reset and single-preview JS behavior
+        run: |
+          node <<'NODE'
+          const fs=require('fs'),assert=require('assert');
+          const src=fs.readFileSync('buildsrc/app/src/main/assets/index.html','utf8');
+          const m=src.match(/x\('resetBtn'\)\.onclick=(\(\)=>\{[^{}]*\})/);
+          assert(m,'reset handler missing');
+          let prefs={count:14},persisted=-1;
+          const counter={textContent:'14'};
+          const action=Function('prefs','store','x','numerals',
+            'return ('+m[1]+');')(
+              prefs,()=>persisted=prefs.count,
+              (id)=>{assert.equal(id,'count');return counter;},
+              n=>String(n)
+            );
+          action();
+          assert.equal(prefs.count,0);
+          assert.equal(persisted,0);
+          assert.equal(counter.textContent,'0');
+          assert(src.includes("canNativeOverlay"));
+          assert.equal((src.match(/class=\"settingCard simpleCard\"/g)||[]).length,3,'three compact settings cards');
+          const settingsView=src.slice(src.indexOf('function settings(){return'),src.indexOf('function bind(){'));
+          assert(!settingsView.includes('quickFix'),'old quick-fix panel must not appear in settings view');
+          console.log('Reset test passed; WebView preview is native-only on Android');
+          NODE
+      - name: Compile application and Android tests
+        working-directory: buildsrc
+        run: gradle :app:assembleRelease :app:assembleDebug :app:assembleDebugAndroidTest --no-daemon --stacktrace
+      - name: Export non-debug unsigned release and signer utility
+        run: |
+          cp buildsrc/app/build/outputs/apk/release/app-release-unsigned.apk ./Zikrakan_v3.3_Unsigned_Release.apk
+          signer_jar="$(find "$ANDROID_HOME/build-tools" -type f -name apksigner.jar | head -1)"
+          test -f "$signer_jar"
+          cp "$signer_jar" ./apksigner-tool.jar
+      - name: Save unsigned release and signing utility
+        uses: actions/upload-artifact@v4
+        with:
+          name: Zikrakan-v3.3-Unsigned-Release-Tool
+          path: |
+            Zikrakan_v3.3_Unsigned_Release.apk
+            apksigner-tool.jar
+          retention-days: 2
+          if-no-files-found: error
+      - name: Save APK for review
+        uses: actions/upload-artifact@v4
+        with:
+          name: Zikrakan-v3.3-Built-APK
+          path: buildsrc/app/build/outputs/apk/debug/app-debug.apk
+          if-no-files-found: error
+          retention-days: 30
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=android-sdk"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+      - name: Test notifications on Android 35 emulator
+        uses: reactivecircus/android-emulator-runner@v2
+        with:
+          api-level: 35
+          target: google_apis
+          arch: x86_64
+          profile: pixel_6
+          emulator-options: -no-window -gpu swiftshader_indirect -no-snapshot -noaudio -no-boot-anim
+          disable-animations: true
+          script: |
+            adb install -r buildsrc/app/build/outputs/apk/debug/app-debug.apk
+            adb install -r buildsrc/app/build/outputs/apk/androidTest/debug/app-debug-androidTest.apk
+            adb shell pm grant com.zikr.zikrakan android.permission.POST_NOTIFICATIONS
+            adb shell appops set com.zikr.zikrakan SYSTEM_ALERT_WINDOW allow
+            adb shell appops get com.zikr.zikrakan SYSTEM_ALERT_WINDOW
+            adb shell am instrument -w -r com.zikr.zikrakan.test/androidx.test.runner.AndroidJUnitRunner | tee /tmp/zikr_tests.txt
+            grep -q 'OK (7 tests)' /tmp/zikr_tests.txt
